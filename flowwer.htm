@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Block Diagram Editor</title>
+  <!-- Include Konva.js -->
+  <script src="https://unpkg.com/konva@7.0.4/konva.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      height: 100vh;
+    }
+
+    #palette {
+      width: 100px;
+      background: #f0f0f0;
+      padding: 10px;
+      box-shadow: 1px 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    #editor {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="palette">
+    <div id="draggableBlock" draggable="true">Block</div>
+  </div>
+  <div id="editor"></div>
+
+  <script>
+    // Initialize Konva
+    const stage = new Konva.Stage({
+      container: 'editor',
+      width: window.innerWidth - 100,
+      height: window.innerHeight,
+    });
+
+    const layer = new Konva.Layer();
+    stage.add(layer);
+
+    const connectionsLayer = new Konva.Layer();
+    stage.add(connectionsLayer);
+
+    // Function to create a block with input and output ports
+    function createBlock(x, y) {
+      const blockGroup = new Konva.Group({
+        x,
+        y,
+        draggable: true,
+      });
+
+      const block = new Konva.Rect({
+        width: 100,
+        height: 50,
+        fill: 'lightblue',
+      });
+
+      const inputPort = new Konva.Circle({
+        x: 0,
+        y: 25,
+        radius: 5,
+        fill: 'red',
+        draggable: true,
+      });
+
+      const outputPort = new Konva.Circle({
+        x: 100,
+        y: 25,
+        radius: 5,
+        fill: 'green',
+        draggable: true,
+      });
+
+      blockGroup.add(block, inputPort, outputPort);
+      layer.add(blockGroup);
+      layer.draw();
+
+      // Add event listeners for connecting blocks
+      inputPort.on('dragmove', updateConnection);
+      outputPort.on('dragmove', updateConnection);
+    }
+
+    // Add a draggable block with input and output ports to the palette
+    const draggableBlock = document.getElementById('draggableBlock');
+    draggableBlock.addEventListener('dragstart', (event) => {
+      event.dataTransfer.setData('text/plain', 'block');
+    });
+
+    // Handle drop event on the editor
+    stage.container().addEventListener('drop', (event) => {
+      event.preventDefault();
+
+      const position = stage.getPointerPosition();
+      createBlock(position.x, position.y);
+    });
+
+    stage.container().addEventListener('dragover', (event) => {
+      event.preventDefault();
+    });
+
+    // Function to update connections between blocks
+    function updateConnection() {
+      connectionsLayer.destroyChildren();
+
+      layer.children.each((blockGroup) => {
+        const outputPort = blockGroup.findOne('.outputPort');
+        if (outputPort) {
+          const outputPortPosition = outputPort.getAbsolutePosition();
+
+          layer.children.each((otherBlockGroup) => {
+            const inputPort = otherBlockGroup.findOne('.inputPort');
+            if (inputPort) {
+              const inputPortPosition = inputPort.getAbsolutePosition();
+
+              const line = new Konva.Line({
+                points: [outputPortPosition.x, outputPortPosition.y, inputPortPosition.x, inputPortPosition.y],
+                stroke: 'black',
+                strokeWidth: 2,
+              });
+
+              connectionsLayer.add(line);
+            }
+          });
+        }
+      });
+
+      stage.batchDraw();
+    }
+  </script>
+</body>
+</html>
