@@ -15,7 +15,7 @@
 
     #palette {
       width: 100px;
-      background: #f0f0f0;
+      background: #461b1b;
       padding: 10px;
       box-shadow: 1px 0 5px rgba(0, 0, 0, 0.1);
     }
@@ -30,6 +30,8 @@
     <div id="draggableBlock" draggable="true">Block</div>
   </div>
   <div id="editor"></div>
+  <div id="twopi"></div>
+  
 
   <script>
     // Initialize Konva
@@ -41,12 +43,23 @@
 
     const layer = new Konva.Layer();
     stage.add(layer);
+    const dragLayer = new Konva.Layer();
+    stage.add(dragLayer);
+
+    const paletteStage = new Konva.Stage({
+      container: 'palette',
+      width: 100,
+      height: window.innerHeight,
+    });
+    const paletteLayer = new Konva.Layer();
+    paletteStage.add(paletteLayer);
 
     const connectionsLayer = new Konva.Layer();
     stage.add(connectionsLayer);
 
-    // Function to create a block with input and output ports
-    function createBlock(x, y) {
+
+    // Function to create a block with user-defined attributes
+    function createBlock(x, y, numInputPorts, numOutputPorts, blockName) {
       const blockGroup = new Konva.Group({
         x,
         y,
@@ -59,32 +72,64 @@
         fill: 'lightblue',
       });
 
-      const inputPort = new Konva.Circle({
-        x: 0,
-        y: 25,
-        radius: 5,
-        fill: 'red',
-        draggable: true,
-      });
+      // Set custom attributes for the block
+      block.setAttr('numInputPorts', numInputPorts);
+      block.setAttr('numOutputPorts', numOutputPorts);
 
-      const outputPort = new Konva.Circle({
-        x: 100,
-        y: 25,
-        radius: 5,
-        fill: 'green',
-        draggable: true,
-      });
+      const inputPorts = [];
+      const outputPorts = [];
 
-      blockGroup.add(block, inputPort, outputPort);
-      layer.add(blockGroup);
+      // Create input ports
+      for (let i = 0; i < numInputPorts; i++) {
+        const inputPort = new Konva.Circle({
+          x: 0,
+          y: i * (50 / numInputPorts),
+          radius: 5,
+          fill: 'red',
+          draggable: false,
+        });
+        inputPorts.push(inputPort);
+      }
+
+      // Create output ports
+      for (let i = 0; i < numOutputPorts; i++) {
+        const outputPort = new Konva.Circle({
+          x: 100,
+          y: i * (50 / numOutputPorts),
+          radius: 5,
+          fill: 'green',
+          draggable: false,
+        });
+        outputPorts.push(outputPort);
+      }
+
+      // add the label
+       const label = new Konva.Text({
+        text: blockName,
+        fontSize: 18,
+        fontFamily: 'Calibri',
+        fill: '#000',
+        width: 130,
+        padding: 5,
+        align: 'center'
+    });
+
+      blockGroup.add(block, label, ...inputPorts, ...outputPorts);
+      return blockGroup;
+/*       layer.add(blockGroup);
       layer.draw();
 
       // Add event listeners for connecting blocks
       inputPort.on('dragmove', updateConnection);
-      outputPort.on('dragmove', updateConnection);
+      outputPort.on('dragmove', updateConnection); */
     }
 
-    // Add a draggable block with input and output ports to the palette
+    // Add a draggable block with user-defined attributes to the palette
+
+    pp = createBlock(0, 0, 2,3, "blocky")
+    paletteLayer.add(pp);
+    paletteLayer.draw();
+
     const draggableBlock = document.getElementById('draggableBlock');
     draggableBlock.addEventListener('dragstart', (event) => {
       event.dataTransfer.setData('text/plain', 'block');
@@ -94,8 +139,12 @@
     stage.container().addEventListener('drop', (event) => {
       event.preventDefault();
 
+      stage.setPointersPositions(event);
       const position = stage.getPointerPosition();
-      createBlock(position.x, position.y);
+      // Create a block with 2 input ports and 3 output ports
+      let pp = createBlock(position.x, position.y, 2, 3, 'blocky');
+      layer.add(pp);
+      layer.draw();
     });
 
     stage.container().addEventListener('dragover', (event) => {
